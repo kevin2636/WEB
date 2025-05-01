@@ -1,0 +1,137 @@
+// App.jsx
+import React from "react";
+import { CartProvider } from "./CartContext";
+import Shop from "./Shop";
+import Cart from "./Cart";
+
+export default function App() {
+  return (
+    <CartProvider>
+      <div className="min-h-screen bg-white text-black p-6">
+        <h1 className="text-3xl font-bold mb-6">🛒 Minimal Shop</h1>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Shop />
+          <Cart />
+        </div>
+      </div>
+    </CartProvider>
+  );
+}
+
+// CartContext.jsx
+import React, { createContext, useContext, useState } from "react";
+
+const CartContext = createContext();
+
+export function CartProvider({ children }) {
+  const [cart, setCart] = useState([]);
+
+  const addToCart = (item) => {
+    setCart((prev) => {
+      const exists = prev.find((i) => i.id === item.id);
+      if (exists) {
+        return prev.map((i) =>
+          i.id === item.id ? { ...i, qty: i.qty + 1 } : i
+        );
+      }
+      return [...prev, { ...item, qty: 1 }];
+    });
+  };
+
+  const removeFromCart = (id) => {
+    setCart((prev) => prev.filter((i) => i.id !== id));
+  };
+
+  const updateQty = (id, qty) => {
+    setCart((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, qty: qty } : i))
+    );
+  };
+
+  return (
+    <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQty }}>
+      {children}
+    </CartContext.Provider>
+  );
+}
+
+export const useCart = () => useContext(CartContext);
+
+// Shop.jsx
+import React from "react";
+import { useCart } from "./CartContext";
+
+const PRODUCTS = [
+  { id: 1, name: "T-shirt", price: 20 },
+  { id: 2, name: "Hat", price: 10 },
+  { id: 3, name: "Shoes", price: 50 },
+];
+
+export default function Shop() {
+  const { addToCart } = useCart();
+
+  return (
+    <div>
+      <h2 className="text-xl font-semibold mb-2">Shop</h2>
+      {PRODUCTS.map((item) => (
+        <div
+          key={item.id}
+          className="flex justify-between items-center border-b border-black py-2"
+        >
+          <span>
+            {item.name} - ${item.price}
+          </span>
+          <button
+            onClick={() => addToCart(item)}
+            className="border border-black px-2 py-1"
+          >
+            Add to Cart
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Cart.jsx
+import React from "react";
+import { useCart } from "./CartContext";
+
+export default function Cart() {
+  const { cart, removeFromCart, updateQty } = useCart();
+
+  return (
+    <div>
+      <h2 className="text-xl font-semibold mb-2">Cart</h2>
+      {cart.length === 0 ? (
+        <p>Your cart is empty.</p>
+      ) : (
+        cart.map((item) => (
+          <div
+            key={item.id}
+            className="flex justify-between items-center border-b border-black py-2"
+          >
+            <div>
+              {item.name} (${item.price})
+              <br />
+              Qty:
+              <input
+                type="number"
+                min="1"
+                value={item.qty}
+                onChange={(e) => updateQty(item.id, parseInt(e.target.value))}
+                className="w-12 ml-2 border border-black text-center"
+              />
+            </div>
+            <button
+              onClick={() => removeFromCart(item.id)}
+              className="text-sm border border-black px-2 py-1"
+            >
+              Remove
+            </button>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
